@@ -6,5 +6,6 @@ public class PlaymodeSettingsInstaller : ScriptableObjectInstaller<PlaymodeSetti
 {
     public override void InstallBindings()
     {
+        Container.BindInterfacesAndSelfTo<WorldManager>().AsSingle().NonLazy();
     }
 }
