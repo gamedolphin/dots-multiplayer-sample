@@ -27,7 +27,7 @@ public class ClientNetworkSystem : ComponentSystem
     {
         client.PollEvents();
     }
-
+     
     protected override void OnDestroy()
     {
         base.OnDestroy();

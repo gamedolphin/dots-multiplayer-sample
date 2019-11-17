@@ -12,3 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 780cd007c84fbca4887c5d215c1e8209, type: 3}
   m_Name: PlayModeSettings
   m_EditorClassIdentifier: 
+  settings:
+    playMode: 2
+    clientCount: 1
