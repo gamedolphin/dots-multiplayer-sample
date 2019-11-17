@@ -1,17 +1,36 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
-using Zenject;
 using Unity.Entities;
+using Zenject;
 
-public class WorldManager :  IInitializable  {
+public static class WorldTypes
+{
+    public const string Server = "Server";
+    public const string Client = "Client";
+}
 
-    public World serverWorld;
-    public World clientWorld;
 
-    public void Initialize() {
-        Debug.Log("CREATING WORLDS");
-        serverWorld = new World("Server");
-        clientWorld = new World("Client");
+public class WorldManager : IInitializable
+{
+    public static World ServerWorld {
+        get;
+        private set;
+    }
+
+    public static World ClientWorld {
+        get;
+        private set;
+    }
+
+    public void Initialize()
+    {
+        ServerWorld = new World(WorldTypes.Server);
+        ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
+
+        World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(serverSimulationGroup);
+
+        ClientWorld = new World(WorldTypes.Client);
+        ClientSystemGroup clientSimulationGroup = ClientWorld.GetOrCreateSystem<ClientSystemGroup>();
+        World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(clientSimulationGroup);
     }
 }
