@@ -22,6 +22,8 @@ public class ServerSystemGroup : ComponentSystemGroup
         var systemsList = new List<Type>
         {
             typeof(ServerNetworkSystem),
+            typeof(PlayerLifecyleSystem),
+            typeof(ServerInputSystem),
             typeof(TransformSystemGroup),
             typeof(LateSimulationSystemGroup)
         };

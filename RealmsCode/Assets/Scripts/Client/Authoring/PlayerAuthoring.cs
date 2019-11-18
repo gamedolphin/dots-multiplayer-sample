@@ -35,11 +35,12 @@ public class PlayerAuthoring : ConvertToEntity
 
         if (worldSettings.HasClient)
         {
-            foreach (var world in WorldManager.ClientWorlds)
+            for (int i = 0; i < WorldManager.ClientWorlds.Length; i++)
             {
+                var world = WorldManager.ClientWorlds[i];
                 World.Active = world;
                 ConvertObject();
-            }
+            }            
         }
 
         if (worldSettings.HasServer)

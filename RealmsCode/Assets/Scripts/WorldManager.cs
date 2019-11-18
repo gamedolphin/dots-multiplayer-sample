@@ -22,6 +22,7 @@ public class WorldSettings
 {
     public PlayMode playMode = PlayMode.BOTH;
     public int clientCount;
+    public int playerClient = 0;
 
     public bool HasClient => playMode == PlayMode.BOTH || playMode == PlayMode.CLIENT;
     public bool HasServer => playMode == PlayMode.BOTH || playMode == PlayMode.SERVER;
@@ -61,7 +62,13 @@ public class WorldManager : IInitializable
                 var cWorld = new World($"{WorldTypes.Client} {i + 1}");
                 ClientSystemGroup clientSimulationGroup = cWorld.GetOrCreateSystem<ClientSystemGroup>();
                 World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(clientSimulationGroup);
-                ClientWorlds[i] = cWorld;
+                ClientWorlds[i] = cWorld;     
+                if(i == settings.playerClient)
+                {
+                    var inputEntity = cWorld.EntityManager.CreateEntity();
+                    cWorld.EntityManager.AddBuffer<ClientInput>(inputEntity);
+                    cWorld.EntityManager.SetName(inputEntity, "InputEntity");
+                }
             }            
         }            
     }
