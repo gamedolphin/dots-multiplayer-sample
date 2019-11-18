@@ -87,15 +87,15 @@ public class WorldManager : IInitializable
                 ClientSystemGroup clientSimulationGroup = cWorld.GetOrCreateSystem<ClientSystemGroup>();
                 simulationSystem.AddSystemToUpdateList(clientSimulationGroup);
 
+                ClientPresentationSystemGroup clientPresentationSystem = cWorld.GetOrCreateSystem<ClientPresentationSystemGroup>();
+                presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
+
                 ClientWorlds[i] = cWorld;     
                 if(i == settings.playerClient)
                 {
                     var inputEntity = cWorld.EntityManager.CreateEntity();
                     cWorld.EntityManager.AddBuffer<ClientInput>(inputEntity);
-                    cWorld.EntityManager.SetName(inputEntity, "InputEntity");
-
-                    ClientPresentationSystemGroup clientPresentationSystem = cWorld.GetOrCreateSystem<ClientPresentationSystemGroup>();
-                    presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
+                    cWorld.EntityManager.SetName(inputEntity, "InputEntity");                   
                 }
             }            
         }            

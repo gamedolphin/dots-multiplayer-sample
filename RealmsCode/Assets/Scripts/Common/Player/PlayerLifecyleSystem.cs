@@ -18,12 +18,21 @@ public class PlayerLifecyleSystem : ComponentSystem
         Entities.ForEach((Entity e, ref CreatePlayer cp) =>
         {
             PostUpdateCommands.DestroyEntity(e);
-            var entity = GameObjectConversionUtility.ConvertGameObjectHierarchy(WorldManager.PlayerPrefab,
+            var p = GameObjectConversionUtility.ConvertGameObjectHierarchy(WorldManager.PlayerPrefab,
                 World);
-            EntityManager.AddComponentData(entity, new PlayerData { ID = cp.Id });
+            var entity = EntityManager.Instantiate(p);
+            EntityManager.AddComponentData(entity, new PlayerData { Id = cp.Id });
             EntityManager.AddBuffer<ClientInput>(entity);
             EntityManager.SetName(entity, $"Player{cp.Id}");
+
+            if(cp.OwnPlayer)
+            {
+                // add special component for current player
+                EntityManager.AddComponent<CurrentPlayer>(entity);
+            }
+
             players[cp.Id] = entity;
+            EntityManager.DestroyEntity(p);
         });
 
         Entities.ForEach((Entity e, ref DestroyPlayer dp) =>

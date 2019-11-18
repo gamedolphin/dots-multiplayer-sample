@@ -71,7 +71,7 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
     {
         server = peer;
         var entity = PostUpdateCommands.CreateEntity();
-        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = OwnId });
+        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = OwnId, OwnPlayer = true });
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

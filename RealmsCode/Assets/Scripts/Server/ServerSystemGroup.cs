@@ -2,6 +2,7 @@ using Unity.Entities;
 using System.Collections.Generic;
 using System;
 using Unity.Transforms;
+using UnityEngine;
 
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
@@ -64,6 +65,55 @@ public class ServerInitializationSystemGroup : ComponentSystemGroup
 
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
+public class ServerFixedUpdateGroup : ComponentSystemGroup
+{
+    protected List<ComponentSystemBase> m_systemsInGroup = new List<ComponentSystemBase>();
+
+    private FixedTimeLoop m_fixedTimeLoop;
+    public float UpdateTime => Time.time - m_fixedTimeLoop.accumulatedTime;
+    public float UpdateDeltaTime => FixedTimeLoop.fixedTimeStep;
+
+    public override IEnumerable<ComponentSystemBase> Systems => m_systemsInGroup;
+
+    protected override void OnCreate()
+    {
+
+        var systemsList = new List<Type>
+        {
+            typeof(ServerProcessInputSystem)
+        };
+
+        foreach (var sys in systemsList)
+        {
+            AddSystemToUpdateList(World.GetOrCreateSystem(sys));
+
+        }        
+
+        SortSystemUpdateList();
+    }
+
+    public override void SortSystemUpdateList()
+    {
+        base.SortSystemUpdateList();
+        m_systemsInGroup = new List<ComponentSystemBase>(m_systemsToUpdate.Count);
+        m_systemsInGroup.AddRange(m_systemsToUpdate);
+    }
+
+    protected override void OnUpdate()
+    {
+        var defaultWorld = World.Active;
+        World.Active = World;
+        m_fixedTimeLoop.BeginUpdate();
+        while (m_fixedTimeLoop.ShouldUpdate())
+        {
+            base.OnUpdate();
+        }
+        World.Active = defaultWorld;
+    }
+}
+
+[DisableAutoCreation]
+[AlwaysUpdateSystem]
 public class ServerSystemGroup : ComponentSystemGroup
 {
     private BeginSimulationEntityCommandBufferSystem m_beginBarrier;
@@ -81,7 +131,8 @@ public class ServerSystemGroup : ComponentSystemGroup
         {
             typeof(ServerNetworkSystem),
             typeof(PlayerLifecyleSystem),
-            typeof(ServerProcessInputSystem)
+            typeof(ServerFixedUpdateGroup),
+            typeof(ServerSendStateSystem)
         };
 
         foreach (var sys in systemsList)

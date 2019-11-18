@@ -25,6 +25,7 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
     private readonly byte[] temp = new byte[1024];
 
     private List<NetPeer> clientList = new List<NetPeer>();
+    private EntityQuery stateQuery => GetEntityQuery(typeof(SerializedServerState));
 
     protected override void OnCreate()
     {
@@ -36,6 +37,20 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
     protected override void OnUpdate()
     {
         server.PollEvents();
+        HandleServerState();
+    }
+
+    private void HandleServerState()
+    {
+        Entities.With(stateQuery).ForEach((Entity entity) =>
+        {
+            var data = EntityManager.GetBuffer<SerializedServerState>(entity).Reinterpret<byte>().AsNativeArray();
+            for (int i = 0; i < clientList.Count; ++i)
+            {
+                clientList[i].Send(data.ToArray(), DeliveryMethod.ReliableOrdered);
+            }
+            PostUpdateCommands.DestroyEntity(entity);
+        });
     }
 
     protected override void OnDestroy()
