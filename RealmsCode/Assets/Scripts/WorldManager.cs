@@ -26,6 +26,8 @@ public class WorldSettings
 
     public bool HasClient => playMode == PlayMode.BOTH || playMode == PlayMode.CLIENT;
     public bool HasServer => playMode == PlayMode.BOTH || playMode == PlayMode.SERVER;
+
+    public GameObject playerPrefab;
 }
 
 
@@ -44,11 +46,25 @@ public class WorldManager : IInitializable
         private set;
     }
 
+    private static GameObject _prefab;
+    public static GameObject PlayerPrefab {
+        get {
+            return _prefab;
+        }
+    }
+
     public void Initialize()
     {
+
+        _prefab = settings.playerPrefab;
+
         if(settings.HasServer)
         {
             ServerWorld = new World(WorldTypes.Server);
+
+            ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
+            World.Active.GetOrCreateSystem<InitializationSystemGroup>().AddSystemToUpdateList(serverInitializationGroup);
+
             ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
             World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(serverSimulationGroup);
         }
@@ -59,15 +75,27 @@ public class WorldManager : IInitializable
             ClientWorlds = new World[count];
             for (int i = 0; i < count; i++)
             {
+                var initializationSystem = World.Active.GetOrCreateSystem<InitializationSystemGroup>();
+                var simulationSystem = World.Active.GetOrCreateSystem<SimulationSystemGroup>();
+                var presentationSystem = World.Active.GetOrCreateSystem<PresentationSystemGroup>();
+
                 var cWorld = new World($"{WorldTypes.Client} {i + 1}");
+
+                ClientInitializationSystemGroup clientInitializationSystem = cWorld.GetOrCreateSystem<ClientInitializationSystemGroup>();
+                initializationSystem.AddSystemToUpdateList(clientInitializationSystem);
+
                 ClientSystemGroup clientSimulationGroup = cWorld.GetOrCreateSystem<ClientSystemGroup>();
-                World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(clientSimulationGroup);
+                simulationSystem.AddSystemToUpdateList(clientSimulationGroup);
+
                 ClientWorlds[i] = cWorld;     
                 if(i == settings.playerClient)
                 {
                     var inputEntity = cWorld.EntityManager.CreateEntity();
                     cWorld.EntityManager.AddBuffer<ClientInput>(inputEntity);
                     cWorld.EntityManager.SetName(inputEntity, "InputEntity");
+
+                    ClientPresentationSystemGroup clientPresentationSystem = cWorld.GetOrCreateSystem<ClientPresentationSystemGroup>();
+                    presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
                 }
             }            
         }            

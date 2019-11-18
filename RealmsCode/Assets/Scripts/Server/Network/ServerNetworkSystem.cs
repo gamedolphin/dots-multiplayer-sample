@@ -9,6 +9,12 @@ using MessagePack;
 using Zenject;
 using Unity.Transforms;
 
+public struct ServerInputCommand : IComponentData
+{
+    public int playerID;
+    public InputData inputData;
+}
+
 [DisableAutoCreation]
 public class ServerNetworkSystem : ComponentSystem, INetEventListener
 {
@@ -70,7 +76,6 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
             playerID = (int)peer.Tag,
             inputData = inputData
         });
-        // serverSimulation.AddInput((int)peer.Tag, inputData);
         reader.Recycle();
     }
 

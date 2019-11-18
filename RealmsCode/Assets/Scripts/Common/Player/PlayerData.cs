@@ -12,3 +12,8 @@ public struct PlayerData : IComponentData
 public struct CreatePlayer : IComponentData { public int Id; }
 
 public struct DestroyPlayer : IComponentData { public int Id;  }
+
+public struct PlayerPrefab : ISharedComponentData
+{
+    public Entity Prefab;
+}
