@@ -30,13 +30,19 @@ public struct PlayerState : IComponentData
     public Vector3Sim Position;
     [Key(2)]
     public long Index;
+
+    public PlayerState(PlayerState ps) {
+        Id = ps.Id;
+        Position = ps.Position;
+        Index = ps.Index;
+    }
 }
 
 [MessagePackObject]
 public struct WorldState
 {
     [Key(0)]
-    public List<PlayerState> playerState;
+    public PlayerState[] playerState;
 }
 
 public struct SerializedServerState : IBufferElementData
@@ -45,41 +51,91 @@ public struct SerializedServerState : IBufferElementData
 }
 
 [DisableAutoCreation]
-public class ServerSendStateSystem : ComponentSystem
+public class ServerSendStateSystem : JobComponentSystem
 {
     private float updateTime = 0.2f;
     private float oldTime = 0;
-    private WorldState worldState = new WorldState
-    {
-        playerState = new List<PlayerState>()
-    };
-    private int index = 0;
 
-    protected override void OnUpdate()
+    EndSimulationEntityCommandBufferSystem m_EndFrameBarrier;
+
+    protected override void OnCreate()
+    {
+        base.OnCreate();
+        m_EndFrameBarrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+    }
+    
+    public struct CreatePlayerStateJob : IJobForEachWithEntity<Translation, PlayerData, PlayerIndex>
+    {
+        public NativeArray<PlayerState> arr;
+
+        [NativeDisableParallelForRestriction]
+        public NativeArray<int> count;
+        public void Execute(Entity e, int index, ref Translation transform, 
+            ref PlayerData playerData, ref PlayerIndex playerIndex)
+        {
+            var pos = transform.Value;
+            arr[index] = new PlayerState
+            {
+                Id = playerData.Id,
+                Position = new Vector3Sim { x = pos.x, y = pos.y, z = pos.z },
+                Index = playerIndex.Index
+            };
+            count[0] += 1;
+        }
+    }
+    
+    public struct SerializeStateJob : IJob
+    {
+        public EntityCommandBuffer CommandBuffer;
+        public NativeArray<PlayerState> players;
+        public NativeArray<int> countArr;
+
+        public void Execute()
+        {
+            var stateEntity = CommandBuffer.CreateEntity();            
+            var worldState = new WorldState
+            {
+                playerState = players.Slice(0, countArr[0]).ToArray()
+            };
+            var serializedState = MessagePackSerializer.Serialize(worldState);
+            var buffer = CommandBuffer.AddBuffer<SerializedServerState>(stateEntity).Reinterpret<byte>();
+            var nativearray = new NativeArray<byte>(serializedState, Allocator.Temp);
+            buffer.AddRange(nativearray);
+        }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         if (Time.time - oldTime > updateTime)
         {
             oldTime = Time.time;
-            worldState.playerState.Clear();
-            Entities.ForEach((ref Translation transform, 
-                ref PlayerData playerData, 
-                ref PlayerIndex playerIndex) =>
+
+            var nativeArr = new NativeArray<PlayerState>(100, Allocator.TempJob);
+            var countArr = new NativeArray<int>(1, Allocator.TempJob);
+
+            var playerStateJob = new CreatePlayerStateJob()
             {
-                var pos = transform.Value;
-                worldState.playerState.Add(new PlayerState
-                {
-                    Id = playerData.Id,
-                    Position = new Vector3Sim { x = pos.x, y = pos.y, z = pos.z },
-                    Index = playerIndex.Index
-                });
+                arr = nativeArr,
+                count = countArr
+            }.Schedule(this, inputDeps);
 
-            });
+            var serializeJob = new SerializeStateJob()
+            {
+                CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
+                players = nativeArr,
+                countArr = countArr
 
-            var stateEntity = EntityManager.CreateEntity();
-            var buffer = EntityManager.AddBuffer<SerializedServerState>(stateEntity).Reinterpret<byte>();
-            var serializedState = MessagePackSerializer.Serialize(worldState);
-            var nativearray = new NativeArray<byte>(serializedState, Allocator.Temp);
-            buffer.AddRange(nativearray);
+            }.Schedule(playerStateJob);
+
+            m_EndFrameBarrier.AddJobHandleForProducer(serializeJob);
+
+            serializeJob.Complete();
+
+            nativeArr.Dispose();
+            countArr.Dispose();
+
+            return serializeJob;
         }
+        return inputDeps;
     }
 }

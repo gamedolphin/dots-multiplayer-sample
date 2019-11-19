@@ -11,6 +11,8 @@ using LiteNetLib.Utils;
 using Unity.Transforms;
 using Unity.Collections;
 
+public struct ServerStateCommand : IComponentData { }
+
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
 [UpdateAfter(typeof(ClientInputSystem))]
@@ -83,10 +85,12 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
         var available = reader.AvailableBytes;
         reader.GetBytes(temp, available);
 
-        var entity = EntityManager.CreateEntity();
-        var buffer = EntityManager.AddBuffer<SerializedServerState>(entity).Reinterpret<byte>();
+        var entity = PostUpdateCommands.CreateEntity();
+        PostUpdateCommands.AddComponent(entity, new ServerStateCommand());
+        var buffer = PostUpdateCommands.AddBuffer<SerializedServerState>(entity).Reinterpret<byte>();
         var nativearray = new NativeArray<byte>(temp, Allocator.Temp);
         buffer.AddRange(nativearray);
+        nativearray.Dispose();
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)

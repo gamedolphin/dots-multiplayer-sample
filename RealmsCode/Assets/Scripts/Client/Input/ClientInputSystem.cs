@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
+using System;
+using Unity.Mathematics;
 
 
 // Client Input Buffer is added by the world manager. 
@@ -16,12 +18,18 @@ public class ClientInputSystem : ComponentSystem
 
     private EntityQuery Eq => GetEntityQuery(typeof(ClientInput),typeof(LatestInputIndex));
 
+    protected virtual float2 GetInput()
+    {
+        return new float2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+    }
+
     protected override void OnUpdate()
     {        
         Entities.With(Eq).ForEach((entity) =>
         {
-            var horizontal = Input.GetAxisRaw("Horizontal");
-            var vertical = Input.GetAxisRaw("Vertical");
+            var inputData = GetInput();
+            var horizontal = inputData.x;
+            var vertical = inputData.y;
             var input = new InputData
             {
                 Right = horizontal > 0,
@@ -41,8 +49,8 @@ public class ClientInputSystem : ComponentSystem
             {
                 inputBuffer[bufferSlot] = clientInput;
             }            
-            var networkData = EntityManager.CreateEntity();
-            EntityManager.AddComponentData(networkData, input);            
+            var networkData = PostUpdateCommands.CreateEntity();
+            PostUpdateCommands.AddComponent(networkData, input);            
 
             EntityManager.SetComponentData(entity, new LatestInputIndex { Index = index });
         });        

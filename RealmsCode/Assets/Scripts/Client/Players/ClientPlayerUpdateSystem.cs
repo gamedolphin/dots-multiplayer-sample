@@ -10,17 +10,15 @@ using static Unity.Mathematics.math;
 [DisableAutoCreation]
 public class ClientPlayerUpdateSystem : JobComponentSystem
 {
-    // [BurstCompile]
+    [BurstCompile]
     [RequireComponentTag(typeof(ClientInput),typeof(PlayerData))]
     struct ClientPlayerUpdateSystemJob : IJobForEachWithEntity<
         LatestInputIndex,
         LatestPlayerState,
         PlayerSpeed, 
         Translation>
-    {        
-
-        [NativeDisableParallelForRestriction]
-        public BufferFromEntity<ClientInput> inputBuffers;
+    {                
+        [ReadOnly] public BufferFromEntity<ClientInput> inputBuffers;
 
         public float deltaTime;
 
@@ -45,7 +43,7 @@ public class ClientPlayerUpdateSystem : JobComponentSystem
             var latestServerArrayIndex = (int)(serverIndex% ClientInputSystem.MAX_BUFFER_COUNT) - 1;
             var pos =  latestState.pState.Position;
             translation.Value = new float3(pos.x, pos.y, pos.z);
-            for (int i = 0; i < diff; i++)
+            for (int i = 1; i <= diff; i++)
             {
                 var inputSlot = (int)((serverIndex + i) % ClientInputSystem.MAX_BUFFER_COUNT);
                 var currentInput = inputs[inputSlot].inputData;

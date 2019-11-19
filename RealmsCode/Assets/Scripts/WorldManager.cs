@@ -58,15 +58,19 @@ public class WorldManager : IInitializable
 
         _prefab = settings.playerPrefab;
 
-        if(settings.HasServer)
+        var initializationSystem = World.Active.GetOrCreateSystem<InitializationSystemGroup>();
+        var simulationSystem = World.Active.GetOrCreateSystem<SimulationSystemGroup>();
+        var presentationSystem = World.Active.GetOrCreateSystem<PresentationSystemGroup>();
+
+        if (settings.HasServer)
         {
             ServerWorld = new World(WorldTypes.Server);
 
             ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
-            World.Active.GetOrCreateSystem<InitializationSystemGroup>().AddSystemToUpdateList(serverInitializationGroup);
+            initializationSystem.AddSystemToUpdateList(serverInitializationGroup);
 
             ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
-            World.Active.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(serverSimulationGroup);
+            simulationSystem.AddSystemToUpdateList(serverSimulationGroup);
         }
 
         if (settings.HasClient)
@@ -74,11 +78,7 @@ public class WorldManager : IInitializable
             var count = Mathf.Clamp(settings.clientCount, 1, 10);
             ClientWorlds = new World[count];
             for (int i = 0; i < count; i++)
-            {
-                var initializationSystem = World.Active.GetOrCreateSystem<InitializationSystemGroup>();
-                var simulationSystem = World.Active.GetOrCreateSystem<SimulationSystemGroup>();
-                var presentationSystem = World.Active.GetOrCreateSystem<PresentationSystemGroup>();
-
+            {               
                 var cWorld = new World($"{WorldTypes.Client} {i + 1}");
 
                 ClientInitializationSystemGroup clientInitializationSystem = cWorld.GetOrCreateSystem<ClientInitializationSystemGroup>();
@@ -92,6 +92,9 @@ public class WorldManager : IInitializable
                 {
                     var inputSystem = cWorld.GetExistingSystem(typeof(ClientInputSystem));
                     inputSystem.Enabled = false;
+                    var randomWalker = cWorld.GetOrCreateSystem(typeof(ClientRandomWalkSystem));
+                    clientSimulationGroup.AddSystemToUpdateList(randomWalker);
+                    clientSimulationGroup.SortSystemUpdateList();
                 }
                 else
                 {
@@ -99,6 +102,10 @@ public class WorldManager : IInitializable
                     presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
                 }
             }            
-        }            
+        }
+
+        initializationSystem.SortSystemUpdateList();
+        simulationSystem.SortSystemUpdateList();
+        presentationSystem.SortSystemUpdateList();
     }
 }

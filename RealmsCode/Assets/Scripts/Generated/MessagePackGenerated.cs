@@ -45,7 +45,7 @@ namespace MessagePack.Resolvers
         {
             lookup = new global::System.Collections.Generic.Dictionary<Type, int>(5)
             {
-                {typeof(global::System.Collections.Generic.List<global::PlayerState>), 0 },
+                {typeof(global::PlayerState[]), 0 },
                 {typeof(global::InputData), 1 },
                 {typeof(global::Vector3Sim), 2 },
                 {typeof(global::PlayerState), 3 },
@@ -60,7 +60,7 @@ namespace MessagePack.Resolvers
 
             switch (key)
             {
-                case 0: return new global::MessagePack.Formatters.ListFormatter<global::PlayerState>();
+                case 0: return new global::MessagePack.Formatters.ArrayFormatter<global::PlayerState>();
                 case 1: return new MessagePack.Formatters.InputDataFormatter();
                 case 2: return new MessagePack.Formatters.Vector3SimFormatter();
                 case 3: return new MessagePack.Formatters.PlayerStateFormatter();
@@ -295,7 +295,7 @@ namespace MessagePack.Formatters
             
             var startOffset = offset;
             offset += global::MessagePack.MessagePackBinary.WriteFixedArrayHeaderUnsafe(ref bytes, offset, 1);
-            offset += formatterResolver.GetFormatterWithVerify<global::System.Collections.Generic.List<global::PlayerState>>().Serialize(ref bytes, offset, value.playerState, formatterResolver);
+            offset += formatterResolver.GetFormatterWithVerify<global::PlayerState[]>().Serialize(ref bytes, offset, value.playerState, formatterResolver);
             return offset - startOffset;
         }
 
@@ -310,7 +310,7 @@ namespace MessagePack.Formatters
             var length = global::MessagePack.MessagePackBinary.ReadArrayHeader(bytes, offset, out readSize);
             offset += readSize;
 
-            var __playerState__ = default(global::System.Collections.Generic.List<global::PlayerState>);
+            var __playerState__ = default(global::PlayerState[]);
 
             for (int i = 0; i < length; i++)
             {
@@ -319,7 +319,7 @@ namespace MessagePack.Formatters
                 switch (key)
                 {
                     case 0:
-                        __playerState__ = formatterResolver.GetFormatterWithVerify<global::System.Collections.Generic.List<global::PlayerState>>().Deserialize(bytes, offset, formatterResolver, out readSize);
+                        __playerState__ = formatterResolver.GetFormatterWithVerify<global::PlayerState[]>().Deserialize(bytes, offset, formatterResolver, out readSize);
                         break;
                     default:
                         readSize = global::MessagePack.MessagePackBinary.ReadNextBlock(bytes, offset);

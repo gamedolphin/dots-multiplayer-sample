@@ -71,8 +71,8 @@ public class PlayerLifecyleSystem : ComponentSystem
             // this happens only on the client
             // this is state that came from the server
             var entity = GetOrCreatePlayer(pState.Id, false);
-            EntityManager.SetComponentData(entity, new LatestPlayerState { pState = pState });            
-            PostUpdateCommands.DestroyEntity(e);
+            EntityManager.SetComponentData(entity, new LatestPlayerState { pState = new PlayerState(pState) });
+            EntityManager.DestroyEntity(e);
         });        
     }
 
@@ -97,7 +97,7 @@ public class PlayerLifecyleSystem : ComponentSystem
         EntityManager.AddComponentData(entity, new PlayerTarget { TargetPos = float3(0.0f) });
         if(cp.IsServer == false)
         {
-            EntityManager.AddComponent(entity, typeof(LatestPlayerState));
+            EntityManager.AddComponentData(entity, new LatestPlayerState());
         }        
         else
         {
