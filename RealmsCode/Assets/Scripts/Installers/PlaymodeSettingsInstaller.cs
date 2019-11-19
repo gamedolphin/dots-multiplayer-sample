@@ -7,11 +7,16 @@ public class PlaymodeSettingsInstaller : ScriptableObjectInstaller<PlaymodeSetti
 {
     public WorldSettings settings;
 
+    [InjectOptional]
+    public NetworkSettings networkSettings;
+
     public override void InstallBindings()
     {
         InitializeMessagePack();
         Container.BindInstance(settings).AsSingle();
         Container.BindInterfacesAndSelfTo<WorldManager>().AsSingle().NonLazy();
+        Container.BindInstance(networkSettings).WhenInjectedInto<GameManager>();
+        Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
     }
 
     private void InitializeMessagePack()

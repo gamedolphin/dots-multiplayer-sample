@@ -18,3 +18,7 @@ MonoBehaviour:
     playerClient: 0
     playerPrefab: {fileID: 4569640090722137799, guid: bd0aaf0e424874d46bc9c43e44d6db3a,
       type: 3}
+  networkSettings:
+    Name: player
+    Ip: localhost
+    Port: 8090

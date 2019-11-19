@@ -32,8 +32,9 @@ public class ClientPlayerUpdateSystem : JobComponentSystem
             var inputs = inputBuffers[entity];
             var serverIndex = latestState.pState.Index;
 
-            if(serverIndex == 0)
+            if(serverIndex < 10)
             {
+                // arbitrary lag
                 return;
             }
 

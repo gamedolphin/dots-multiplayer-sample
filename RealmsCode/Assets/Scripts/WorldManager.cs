@@ -31,54 +31,37 @@ public class WorldSettings
 }
 
 
-public class WorldManager : IInitializable
+public class WorldManager 
 {
     [Inject]
     private WorldSettings settings;
 
-    public static World ServerWorld {
+    public World ServerWorld {
         get;
         private set;
     }
 
-    public static World[] ClientWorlds {
+    public World[] ClientWorlds {
         get;
         private set;
     }
-
-    private static GameObject _prefab;
-    public static GameObject PlayerPrefab {
-        get {
-            return _prefab;
-        }
-    }
+    public static GameObject PlayerPrefab { get; private set; }
 
     public void Initialize()
     {
 
-        _prefab = settings.playerPrefab;
+        PlayerPrefab = settings.playerPrefab;
 
         var initializationSystem = World.Active.GetOrCreateSystem<InitializationSystemGroup>();
         var simulationSystem = World.Active.GetOrCreateSystem<SimulationSystemGroup>();
         var presentationSystem = World.Active.GetOrCreateSystem<PresentationSystemGroup>();
-
-        if (settings.HasServer)
-        {
-            ServerWorld = new World(WorldTypes.Server);
-
-            ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
-            initializationSystem.AddSystemToUpdateList(serverInitializationGroup);
-
-            ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
-            simulationSystem.AddSystemToUpdateList(serverSimulationGroup);
-        }
 
         if (settings.HasClient)
         {
             var count = Mathf.Clamp(settings.clientCount, 1, 10);
             ClientWorlds = new World[count];
             for (int i = 0; i < count; i++)
-            {               
+            {
                 var cWorld = new World($"{WorldTypes.Client} {i + 1}");
 
                 ClientInitializationSystemGroup clientInitializationSystem = cWorld.GetOrCreateSystem<ClientInitializationSystemGroup>();
@@ -87,8 +70,8 @@ public class WorldManager : IInitializable
                 ClientSystemGroup clientSimulationGroup = cWorld.GetOrCreateSystem<ClientSystemGroup>();
                 simulationSystem.AddSystemToUpdateList(clientSimulationGroup);
 
-                ClientWorlds[i] = cWorld;     
-                if(i != settings.playerClient)
+                ClientWorlds[i] = cWorld;
+                if (i != settings.playerClient)
                 {
                     var inputSystem = cWorld.GetExistingSystem(typeof(ClientInputSystem));
                     inputSystem.Enabled = false;
@@ -101,8 +84,20 @@ public class WorldManager : IInitializable
                     ClientPresentationSystemGroup clientPresentationSystem = cWorld.GetOrCreateSystem<ClientPresentationSystemGroup>();
                     presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
                 }
-            }            
+            }
         }
+
+        if (settings.HasServer)
+        {
+            ServerWorld = new World(WorldTypes.Server);
+
+            ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
+            initializationSystem.AddSystemToUpdateList(serverInitializationGroup);
+
+            ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
+            simulationSystem.AddSystemToUpdateList(serverSimulationGroup);
+        }
+
 
         initializationSystem.SortSystemUpdateList();
         simulationSystem.SortSystemUpdateList();

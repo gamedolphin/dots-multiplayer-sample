@@ -28,22 +28,14 @@ public class PlayerLifecyleSystem : ComponentSystem
 {
     private Dictionary<int, Entity> players = new Dictionary<int, Entity>();
 
+    public int OwnId = -1;
+
     protected override void OnUpdate()
     {
         Entities.ForEach((Entity e, ref CreatePlayer cp) =>
         {
             PostUpdateCommands.DestroyEntity(e);
-            var entity = GeneratePlayer(cp);
-
-            if(cp.OwnPlayer)
-            {
-                // add special component for current player
-                var buffer = EntityManager.AddBuffer<ClientInput>(entity);
-                buffer.AddRange(new NativeArray<ClientInput>(ClientInputSystem.MAX_BUFFER_COUNT, Allocator.Temp));
-                // buffer.AddRange(new NativeArray<ClientInput>)
-                EntityManager.AddComponentData(entity, new LatestStateIndex { Index = 0 });
-                EntityManager.AddComponentData(entity, new LatestInputIndex { Index = 0 });
-            }            
+            var entity = GeneratePlayer(cp);         
         });
 
         Entities.ForEach((Entity e, ref DestroyPlayer dp) =>
@@ -84,7 +76,7 @@ public class PlayerLifecyleSystem : ComponentSystem
         }
         else
         {
-            return GeneratePlayer(new CreatePlayer { Id = id, IsServer = isServer });
+            return GeneratePlayer(new CreatePlayer { Id = id, IsServer = isServer, OwnPlayer = id == OwnId });
         }
     }
 
@@ -106,6 +98,13 @@ public class PlayerLifecyleSystem : ComponentSystem
         EntityManager.SetName(entity, $"Player{cp.Id}");
         players[cp.Id] = entity;
         EntityManager.DestroyEntity(p);
+        if (cp.OwnPlayer)
+        {
+            // add special component for current player
+            var buffer = EntityManager.AddBuffer<ClientInput>(entity);
+            buffer.AddRange(new NativeArray<ClientInput>(ClientInputSystem.MAX_BUFFER_COUNT, Allocator.Temp));
+            EntityManager.AddComponentData(entity, new LatestInputIndex { Index = 0 });
+        }
         return entity;
     }
 

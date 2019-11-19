@@ -30,14 +30,24 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
     protected override void OnCreate()
     {
         base.OnCreate();
-        server = new NetManager(this);
-        server.Start(9050 /* port */);                
+        server = new NetManager(this);            
     }
 
     protected override void OnUpdate()
     {
         server.PollEvents();
+        HandleServerStart();
         HandleServerState();
+    }
+
+    private void HandleServerStart()
+    {
+        Entities.ForEach((Entity entity, ref NetworkSettingsComponent networkSettings) =>
+        {
+            PostUpdateCommands.DestroyEntity(entity);
+            Debug.Log($"Starting server on port {networkSettings.Port}");
+            server.Start(networkSettings.Port);
+        });
     }
 
     private void HandleServerState()
@@ -63,6 +73,8 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
     {
         Debug.Log("[SERVER] We have new peer " + peer.GetHashCode());
         clientList.Add(peer);
+        var entity = PostUpdateCommands.CreateEntity();
+        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = (int)peer.Tag, IsServer = true });
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -112,8 +124,5 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
         int hashcode = dataReader.GetInt();
         string name = dataReader.GetString();
         peer.Tag = hashcode;
-        // Add server simulation player
-        var entity = PostUpdateCommands.CreateEntity();
-        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = hashcode, IsServer = true });
     }    
 }

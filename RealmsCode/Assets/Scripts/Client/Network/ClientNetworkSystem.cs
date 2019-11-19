@@ -20,28 +20,40 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
 {
     private NetManager client;
     private NetPeer server;
-    private byte[] temp = new byte[1024];
-    private int OwnId;
+    private byte[] temp = new byte[1024];    
      
     protected override void OnCreate()
     {
         base.OnCreate();
         client = new NetManager(this);
-        client.Start();
-        int i = Guid.NewGuid().GetHashCode();
-        string name = PlayerPrefs.GetString("userName");
-        NetDataWriter writer = new NetDataWriter();
-        writer.Put("hashcode");
-        writer.Put(i);
-        writer.Put(name);
-        client.Connect("localhost", 9050, writer);
-        OwnId = i;
+        client.Start();        
     }
 
     protected override void OnUpdate()
     {
         client.PollEvents();
+        HandleConnection();
         HandleInputs();
+    }
+
+    private void HandleConnection()
+    {
+        Entities.ForEach((Entity entity, ref NetworkSettingsComponent settings) =>
+        {
+            PostUpdateCommands.DestroyEntity(entity);
+            Debug.Log($"Connectin to server {settings.Ip}:{settings.Port}");
+            int i = Guid.NewGuid().GetHashCode();
+            string name = settings.Name.ToString();
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put("hashcode");
+            writer.Put(i);
+            writer.Put(name);
+            client.Connect(settings.Ip.ToString(), settings.Port, writer);
+            // this is a one time thing
+            // otherwise lets avoid accessing systems directly
+            var lifecycleSystem = World.GetExistingSystem<PlayerLifecyleSystem>();
+            lifecycleSystem.OwnId = i;
+        });
     }
 
     private void HandleInputs()
@@ -67,8 +79,6 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
     public void OnPeerConnected(NetPeer peer)
     {
         server = peer;
-        var entity = EntityManager.CreateEntity();
-        EntityManager.AddComponentData(entity, new CreatePlayer { Id = OwnId, OwnPlayer = true });
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
