@@ -9,6 +9,7 @@ using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using LiteNetLib.Utils;
 using Unity.Transforms;
+using Unity.Collections;
 
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
@@ -17,7 +18,7 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
 {
     private NetManager client;
     private NetPeer server;
-
+    private byte[] temp = new byte[1024];
     private int OwnId;
      
     protected override void OnCreate()
@@ -35,16 +36,10 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
         OwnId = i;
     }
 
-    int ind = 0;
     protected override void OnUpdate()
     {
         client.PollEvents();
         HandleInputs();
-
-        if(ind > 1000)
-        {
-            client.DisconnectAll();
-        }
     }
 
     private void HandleInputs()
@@ -59,7 +54,7 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
             PostUpdateCommands.DestroyEntity(entity);
         });
     }
-     
+
     protected override void OnDestroy()
     {
         base.OnDestroy();
@@ -70,8 +65,8 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
     public void OnPeerConnected(NetPeer peer)
     {
         server = peer;
-        var entity = PostUpdateCommands.CreateEntity();
-        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = OwnId, OwnPlayer = true });
+        var entity = EntityManager.CreateEntity();
+        EntityManager.AddComponentData(entity, new CreatePlayer { Id = OwnId, OwnPlayer = true });
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -81,26 +76,28 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
-        // throw new System.NotImplementedException();
     }
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
-        // throw new System.NotImplementedException();
+        var available = reader.AvailableBytes;
+        reader.GetBytes(temp, available);
+
+        var entity = EntityManager.CreateEntity();
+        var buffer = EntityManager.AddBuffer<SerializedServerState>(entity).Reinterpret<byte>();
+        var nativearray = new NativeArray<byte>(temp, Allocator.Temp);
+        buffer.AddRange(nativearray);
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
     {
-        // throw new System.NotImplementedException();
     }
 
     public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
-        // throw new System.NotImplementedException();
     }
 
     public void OnConnectionRequest(ConnectionRequest request)
     {
-        // throw new System.NotImplementedException();
     }
 }

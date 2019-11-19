@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     playMode: 2
-    clientCount: 1
+    clientCount: 2
     playerClient: 0
     playerPrefab: {fileID: 4569640090722137799, guid: bd0aaf0e424874d46bc9c43e44d6db3a,
       type: 3}

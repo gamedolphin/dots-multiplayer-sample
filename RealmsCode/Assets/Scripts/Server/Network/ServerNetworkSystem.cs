@@ -114,6 +114,6 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
         peer.Tag = hashcode;
         // Add server simulation player
         var entity = PostUpdateCommands.CreateEntity();
-        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = hashcode });
+        PostUpdateCommands.AddComponent(entity, new CreatePlayer { Id = hashcode, IsServer = true });
     }    
 }

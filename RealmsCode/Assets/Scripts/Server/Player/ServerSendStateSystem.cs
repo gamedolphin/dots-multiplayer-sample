@@ -22,7 +22,7 @@ public struct Vector3Sim
 }
 
 [MessagePackObject]
-public struct PlayerState
+public struct PlayerState : IComponentData
 {
     [Key(0)]
     public int Id;

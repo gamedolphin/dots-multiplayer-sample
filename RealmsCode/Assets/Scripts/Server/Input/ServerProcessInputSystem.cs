@@ -13,6 +13,7 @@ using static Unity.Mathematics.math;
 public class ServerProcessInputSystem : JobComponentSystem
 {
     [BurstCompile]
+    [RequireComponentTag(typeof(ClientInput))]
     struct ServerProcessInputSystemJob : IJobForEachWithEntity<PlayerData,PlayerSpeed,Translation,PlayerIndex>
     {
         [NativeDisableParallelForRestriction]

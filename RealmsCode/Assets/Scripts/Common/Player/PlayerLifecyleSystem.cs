@@ -5,7 +5,22 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 using static Unity.Mathematics.math;
+
+public struct LatestPlayerState : IComponentData
+{
+    public PlayerState pState;
+}
+
+public struct LatestStateIndex : IComponentData {
+    public long Index;
+};
+
+public struct LatestInputIndex : IComponentData
+{
+    public long Index;
+}
 
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
@@ -18,21 +33,17 @@ public class PlayerLifecyleSystem : ComponentSystem
         Entities.ForEach((Entity e, ref CreatePlayer cp) =>
         {
             PostUpdateCommands.DestroyEntity(e);
-            var p = GameObjectConversionUtility.ConvertGameObjectHierarchy(WorldManager.PlayerPrefab,
-                World);
-            var entity = EntityManager.Instantiate(p);
-            EntityManager.AddComponentData(entity, new PlayerData { Id = cp.Id });
-            EntityManager.AddBuffer<ClientInput>(entity);
-            EntityManager.SetName(entity, $"Player{cp.Id}");
+            var entity = GeneratePlayer(cp);
 
             if(cp.OwnPlayer)
             {
                 // add special component for current player
-                EntityManager.AddComponent<CurrentPlayer>(entity);
-            }
-
-            players[cp.Id] = entity;
-            EntityManager.DestroyEntity(p);
+                var buffer = EntityManager.AddBuffer<ClientInput>(entity);
+                buffer.AddRange(new NativeArray<ClientInput>(ClientInputSystem.MAX_BUFFER_COUNT, Allocator.Temp));
+                // buffer.AddRange(new NativeArray<ClientInput>)
+                EntityManager.AddComponentData(entity, new LatestStateIndex { Index = 0 });
+                EntityManager.AddComponentData(entity, new LatestInputIndex { Index = 0 });
+            }            
         });
 
         Entities.ForEach((Entity e, ref DestroyPlayer dp) =>
@@ -54,6 +65,48 @@ public class PlayerLifecyleSystem : ComponentSystem
                 AddInput(player, command.inputData);
             }
         });
+
+        Entities.ForEach((Entity e, ref PlayerState pState) =>
+        {
+            // this happens only on the client
+            // this is state that came from the server
+            var entity = GetOrCreatePlayer(pState.Id, false);
+            EntityManager.SetComponentData(entity, new LatestPlayerState { pState = pState });            
+            PostUpdateCommands.DestroyEntity(e);
+        });        
+    }
+
+    private Entity GetOrCreatePlayer(int id, bool isServer)
+    {
+        if (players.TryGetValue(id, out Entity entity))
+        {
+            return entity;
+        }
+        else
+        {
+            return GeneratePlayer(new CreatePlayer { Id = id, IsServer = isServer });
+        }
+    }
+
+    private Entity GeneratePlayer (CreatePlayer cp)
+    {
+        var p = GameObjectConversionUtility.ConvertGameObjectHierarchy(WorldManager.PlayerPrefab,
+                World);
+        var entity = EntityManager.Instantiate(p);
+        EntityManager.AddComponentData(entity, new PlayerData { Id = cp.Id });
+        EntityManager.AddComponentData(entity, new PlayerTarget { TargetPos = float3(0.0f) });
+        if(cp.IsServer == false)
+        {
+            EntityManager.AddComponent(entity, typeof(LatestPlayerState));
+        }        
+        else
+        {
+            EntityManager.AddBuffer<ClientInput>(entity);
+        }
+        EntityManager.SetName(entity, $"Player{cp.Id}");
+        players[cp.Id] = entity;
+        EntityManager.DestroyEntity(p);
+        return entity;
     }
 
     private void AddInput(Entity player, InputData inputData)

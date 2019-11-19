@@ -166,6 +166,58 @@ public class ClientPresentationSystemGroup : ComponentSystemGroup
     }
 }
 
+
+[DisableAutoCreation]
+[AlwaysUpdateSystem]
+public class ClientFixedUpdateGroup : ComponentSystemGroup
+{
+    protected List<ComponentSystemBase> m_systemsInGroup = new List<ComponentSystemBase>();
+
+    private FixedTimeLoop m_fixedTimeLoop;
+    public float UpdateTime => Time.time - m_fixedTimeLoop.accumulatedTime;
+    public float UpdateDeltaTime => FixedTimeLoop.fixedTimeStep;
+
+    public override IEnumerable<ComponentSystemBase> Systems => m_systemsInGroup;
+
+    protected override void OnCreate()
+    {
+
+        var systemsList = new List<Type>
+        {
+            typeof(OtherPlayerUpdateSystem),
+            typeof(ClientPlayerUpdateSystem)
+        };
+
+        foreach (var sys in systemsList)
+        {
+            AddSystemToUpdateList(World.GetOrCreateSystem(sys));
+
+        }
+
+        SortSystemUpdateList();
+    }
+
+    public override void SortSystemUpdateList()
+    {
+        base.SortSystemUpdateList();
+        m_systemsInGroup = new List<ComponentSystemBase>(m_systemsToUpdate.Count);
+        m_systemsInGroup.AddRange(m_systemsToUpdate);
+    }
+
+    protected override void OnUpdate()
+    {
+        var defaultWorld = World.Active;
+        World.Active = World;
+        m_fixedTimeLoop.BeginUpdate();
+        while (m_fixedTimeLoop.ShouldUpdate())
+        {
+            base.OnUpdate();
+        }
+        World.Active = defaultWorld;
+    }
+}
+
+
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
 public class ClientSystemGroup : ComponentSystemGroup
@@ -186,7 +238,9 @@ public class ClientSystemGroup : ComponentSystemGroup
         {
             typeof(ClientNetworkSystem),
             typeof(PlayerLifecyleSystem),
-            typeof(ClientInputSystem)
+            typeof(ClientInputSystem),
+            typeof(ClientProcessStateSystem),
+            typeof(ClientFixedUpdateGroup)
         };
 
         foreach (var sys in systemsList)

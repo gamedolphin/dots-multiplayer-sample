@@ -14,14 +14,14 @@ public class ClientInputSystem : ComponentSystem
 
     private long index = 0;
 
+    private EntityQuery Eq => GetEntityQuery(typeof(ClientInput),typeof(LatestInputIndex));
+
     protected override void OnUpdate()
-    {
-        var eq = GetEntityQuery(typeof(ClientInput));
-        Entities.With(eq).ForEach((entity) =>
+    {        
+        Entities.With(Eq).ForEach((entity) =>
         {
             var horizontal = Input.GetAxisRaw("Horizontal");
             var vertical = Input.GetAxisRaw("Vertical");
-            var interact = Input.GetKeyDown(KeyCode.F);
             var input = new InputData
             {
                 Right = horizontal > 0,
@@ -42,7 +42,9 @@ public class ClientInputSystem : ComponentSystem
                 inputBuffer[bufferSlot] = clientInput;
             }            
             var networkData = EntityManager.CreateEntity();
-            EntityManager.AddComponentData(networkData, input);
+            EntityManager.AddComponentData(networkData, input);            
+
+            EntityManager.SetComponentData(entity, new LatestInputIndex { Index = index });
         });        
         index++;
     }
