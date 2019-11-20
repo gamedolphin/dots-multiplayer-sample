@@ -5,9 +5,6 @@ using Unity.Entities;
 using System;
 using Unity.Mathematics;
 
-
-// Client Input Buffer is added by the world manager. 
-// This restricts to single input player on each client
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
 public class ClientInputSystem : ComponentSystem
