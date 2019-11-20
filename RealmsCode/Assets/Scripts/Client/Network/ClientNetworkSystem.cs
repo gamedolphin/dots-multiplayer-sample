@@ -16,24 +16,25 @@ public struct ServerStateCommand : IComponentData { }
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
 [UpdateAfter(typeof(ClientInputSystem))]
-public class ClientNetworkSystem : ComponentSystem, INetEventListener
+public class ClientNetworkSystem : ComponentSystem, INetEventListener, INetLogger
 {
     private NetManager client;
     private NetPeer server;
-    private byte[] temp = new byte[1024];    
+    private byte[] temp = new byte[5120];    
      
     protected override void OnCreate()
     {
         base.OnCreate();
+        NetDebug.Logger = this;
         client = new NetManager(this);
         client.Start();        
     }
 
     protected override void OnUpdate()
-    {
-        client.PollEvents();
+    {        
         HandleConnection();
         HandleInputs();
+        client.PollEvents();
     }
 
     private void HandleConnection()
@@ -79,6 +80,7 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
     public void OnPeerConnected(NetPeer peer)
     {
         server = peer;
+        Debug.Log("Connected to server!");
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -88,6 +90,7 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
+        Debug.Log("[CLIENT] error " + socketError);
     }
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
@@ -113,5 +116,10 @@ public class ClientNetworkSystem : ComponentSystem, INetEventListener
 
     public void OnConnectionRequest(ConnectionRequest request)
     {
+    }
+
+    public void WriteNet(NetLogLevel level, string str, params object[] args)
+    {
+        Debug.LogFormat(str, args);
     }
 }

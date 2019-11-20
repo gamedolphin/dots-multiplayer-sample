@@ -1,3 +1,4 @@
+#define DEBUG
 using Unity.Entities;
 using LiteNetLib;
 using UnityEngine;
@@ -9,6 +10,7 @@ using MessagePack;
 using Zenject;
 using Unity.Transforms;
 
+
 public struct ServerInputCommand : IComponentData
 {
     public int playerID;
@@ -16,21 +18,24 @@ public struct ServerInputCommand : IComponentData
 }
 
 [DisableAutoCreation]
-public class ServerNetworkSystem : ComponentSystem, INetEventListener
+[AlwaysUpdateSystem]
+[UpdateBefore((typeof(PlayerLifecyleSystem)))]
+public class ServerNetworkSystem : ComponentSystem, INetEventListener, INetLogger
 {
     [Inject]
     private WorldSettings settings;
 
     private NetManager server;
-    private readonly byte[] temp = new byte[1024];
+    private readonly byte[] temp = new byte[5120];
 
     private List<NetPeer> clientList = new List<NetPeer>();
     private EntityQuery stateQuery => GetEntityQuery(typeof(SerializedServerState));
 
     protected override void OnCreate()
     {
+        NetDebug.Logger = this;
         base.OnCreate();
-        server = new NetManager(this);            
+        server = new NetManager(this);
     }
 
     protected override void OnUpdate()
@@ -97,8 +102,8 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
         reader.GetBytes(temp, available);
         var inputData = MessagePackSerializer.Deserialize<InputData>(temp);
         // update the simulation 
-        var entity = PostUpdateCommands.CreateEntity();
-        PostUpdateCommands.AddComponent(entity, new ServerInputCommand
+        var entity = EntityManager.CreateEntity();
+        EntityManager.AddComponentData(entity, new ServerInputCommand
         {
             playerID = (int)peer.Tag,
             inputData = inputData
@@ -124,5 +129,11 @@ public class ServerNetworkSystem : ComponentSystem, INetEventListener
         int hashcode = dataReader.GetInt();
         string name = dataReader.GetString();
         peer.Tag = hashcode;
-    }    
+        Debug.Log("RECEIVED CONNECTINO REQUEST");
+    }
+
+    public void WriteNet(NetLogLevel level, string str, params object[] args)
+    {
+        Debug.LogFormat(str, args);
+    }
 }

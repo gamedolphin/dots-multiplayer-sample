@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: PlayModeSettings
   m_EditorClassIdentifier: 
   settings:
-    playMode: 2
-    clientCount: 2
-    playerClient: 0
+    playMode: 0
+    clientCount: 25
+    playerClient: -1
     playerPrefab: {fileID: 4569640090722137799, guid: bd0aaf0e424874d46bc9c43e44d6db3a,
       type: 3}
   networkSettings:
-    Name: player
-    Ip: localhost
+    Name: Max Payne
+    Ip: 127.0.0.1
     Port: 8090

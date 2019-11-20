@@ -30,11 +30,29 @@ public class WorldSettings
     public GameObject playerPrefab;
 }
 
+[Serializable]
+public class NetworkSettings
+{
+    public string Name;
+    public string Ip;
+    public int Port;
+}
 
-public class WorldManager 
+public struct NetworkSettingsComponent : IComponentData
+{
+    public NativeString64 Name;
+    public NativeString64 Ip;
+    public int Port;
+}
+
+
+public class WorldManager  : IInitializable
 {
     [Inject]
     private WorldSettings settings;
+
+    [Inject]
+    private NetworkSettings networkSettings;
 
     public World ServerWorld {
         get;
@@ -49,16 +67,32 @@ public class WorldManager
 
     public void Initialize()
     {
-
         PlayerPrefab = settings.playerPrefab;
 
         var initializationSystem = World.Active.GetOrCreateSystem<InitializationSystemGroup>();
         var simulationSystem = World.Active.GetOrCreateSystem<SimulationSystemGroup>();
         var presentationSystem = World.Active.GetOrCreateSystem<PresentationSystemGroup>();
 
+        if (settings.HasServer)
+        {
+            ServerWorld = new World(WorldTypes.Server);
+
+            ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
+            initializationSystem.AddSystemToUpdateList(serverInitializationGroup);
+
+            ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
+            simulationSystem.AddSystemToUpdateList(serverSimulationGroup);
+            var entity = ServerWorld.EntityManager.CreateEntity();
+            ServerWorld.EntityManager.AddComponentData(entity, new NetworkSettingsComponent
+            {
+                // server doesnot care about ip or name
+                Port = networkSettings.Port
+            });
+        }
+
         if (settings.HasClient)
         {
-            var count = Mathf.Clamp(settings.clientCount, 1, 10);
+            var count = Mathf.Clamp(settings.clientCount, 1, 100);
             ClientWorlds = new World[count];
             for (int i = 0; i < count; i++)
             {
@@ -84,23 +118,15 @@ public class WorldManager
                     ClientPresentationSystemGroup clientPresentationSystem = cWorld.GetOrCreateSystem<ClientPresentationSystemGroup>();
                     presentationSystem.AddSystemToUpdateList(clientPresentationSystem);
                 }
+
+                var entity = cWorld.EntityManager.CreateEntity();
+                cWorld.EntityManager.AddComponentData(entity, new NetworkSettingsComponent
+                {
+                    Name = new NativeString64(networkSettings.Name),
+                    Ip = new NativeString64(networkSettings.Ip),
+                    Port = networkSettings.Port
+                });
             }
         }
-
-        if (settings.HasServer)
-        {
-            ServerWorld = new World(WorldTypes.Server);
-
-            ServerInitializationSystemGroup serverInitializationGroup = ServerWorld.GetOrCreateSystem<ServerInitializationSystemGroup>();
-            initializationSystem.AddSystemToUpdateList(serverInitializationGroup);
-
-            ServerSystemGroup serverSimulationGroup = ServerWorld.GetOrCreateSystem<ServerSystemGroup>();
-            simulationSystem.AddSystemToUpdateList(serverSimulationGroup);
-        }
-
-
-        initializationSystem.SortSystemUpdateList();
-        simulationSystem.SortSystemUpdateList();
-        presentationSystem.SortSystemUpdateList();
     }
 }

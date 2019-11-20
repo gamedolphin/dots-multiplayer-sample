@@ -26,4 +26,13 @@ public struct InputData : IComponentData
     {
         return $"{Right} {Left} {Up} {Down}";
     }
+
+    public InputData(InputData data)
+    {
+        Index = data.Index;
+        Right = data.Right;
+        Left = data.Left;
+        Up = data.Up;
+        Down = data.Down;
+    }
 }

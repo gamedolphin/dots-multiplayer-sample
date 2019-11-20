@@ -15,8 +15,7 @@ public class PlaymodeSettingsInstaller : ScriptableObjectInstaller<PlaymodeSetti
         InitializeMessagePack();
         Container.BindInstance(settings).AsSingle();
         Container.BindInterfacesAndSelfTo<WorldManager>().AsSingle().NonLazy();
-        Container.BindInstance(networkSettings).WhenInjectedInto<GameManager>();
-        Container.BindInterfacesAndSelfTo<GameManager>().AsSingle().NonLazy();
+        Container.BindInstance(networkSettings).WhenInjectedInto<WorldManager>();
     }
 
     private void InitializeMessagePack()

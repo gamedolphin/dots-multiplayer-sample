@@ -50,13 +50,13 @@ public static class SystemUtils
 [DisableAutoCreation]
 public class ClientInitializationSystemGroup : ComponentSystemGroup
 {
-    private BeginInitializationEntityCommandBufferSystem m_beginBarrier;
-    private EndInitializationEntityCommandBufferSystem m_endBarrier;
+    private BeginPresentationEntityCommandBufferSystem m_beginBarrier;
+    private EndPresentationEntityCommandBufferSystem m_endBarrier;
 
     protected override void OnCreate()
     {
-        m_beginBarrier = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        m_endBarrier = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
+        m_beginBarrier = World.GetOrCreateSystem<BeginPresentationEntityCommandBufferSystem>();
+        m_endBarrier = World.GetOrCreateSystem<EndPresentationEntityCommandBufferSystem>();
 
         foreach (var system in World.Active.Systems)
         {
@@ -110,13 +110,13 @@ public class ClientInitializationSystemGroup : ComponentSystemGroup
 [AlwaysUpdateSystem]
 public class ClientPresentationSystemGroup : ComponentSystemGroup
 {
-    private BeginPresentationEntityCommandBufferSystem m_beginBarrier;
-    private EndPresentationEntityCommandBufferSystem m_endBarrier;
+    private BeginInitializationEntityCommandBufferSystem m_beginBarrier;
+    private EndInitializationEntityCommandBufferSystem m_endBarrier;
 
     protected override void OnCreate()
     {
-        m_beginBarrier = World.GetOrCreateSystem<BeginPresentationEntityCommandBufferSystem>();
-        m_endBarrier = World.GetOrCreateSystem<EndPresentationEntityCommandBufferSystem>();
+        m_beginBarrier = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+        m_endBarrier = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
 
         foreach(var system in World.Active.Systems)
         {

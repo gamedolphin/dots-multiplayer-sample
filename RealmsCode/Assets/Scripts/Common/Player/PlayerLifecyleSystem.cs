@@ -51,10 +51,10 @@ public class PlayerLifecyleSystem : ComponentSystem
         Entities.ForEach((Entity e, ref ServerInputCommand command) =>
         {
             // this only happens on the server
-            PostUpdateCommands.DestroyEntity(e);
+            EntityManager.DestroyEntity(e);
             if (players.TryGetValue(command.playerID, out Entity player))
             {
-                AddInput(player, command.inputData);
+                AddInput(player, new InputData(command.inputData));
             }
         });
 
@@ -95,7 +95,9 @@ public class PlayerLifecyleSystem : ComponentSystem
         {
             EntityManager.AddBuffer<ClientInput>(entity);
         }
+#if UNITY_EDITOR
         EntityManager.SetName(entity, $"Player{cp.Id}");
+#endif
         players[cp.Id] = entity;
         EntityManager.DestroyEntity(p);
         if (cp.OwnPlayer)

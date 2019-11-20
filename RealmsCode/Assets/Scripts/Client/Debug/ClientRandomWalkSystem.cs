@@ -10,8 +10,18 @@ using UnityEngine;
 [DisableAutoCreation]
 public class ClientRandomWalkSystem : ClientInputSystem
 {
+    private const float WALK_TIME = 0.2f;
+    private float currentTime = 0;
+    private float2 currentDirection;
+
     protected override float2 GetInput()
     {
-        return new float2(UnityEngine.Random.Range(-1, 2), UnityEngine.Random.Range(-1, 2));
+        if(Time.time - currentTime > WALK_TIME)
+        {
+            currentTime = Time.time;
+            currentDirection = new float2(UnityEngine.Random.Range(-1, 2), UnityEngine.Random.Range(-1, 2));
+        }
+
+        return currentDirection;
     }
 }
